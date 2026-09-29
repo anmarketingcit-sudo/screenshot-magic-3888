@@ -14,6 +14,7 @@ import { Route as CreditsRouteImport } from './routes/credits'
 import { Route as ExpensesRouteImport } from './routes/expenses'
 import { Route as ForecastRouteImport } from './routes/forecast'
 import { Route as GoalsRouteImport } from './routes/goals'
+import { Route as StatementsRouteImport } from './routes/statements'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +41,11 @@ const GoalsRoute = GoalsRouteImport.update({
   path: '/goals',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StatementsRoute = StatementsRouteImport.update({
+  id: '/statements',
+  path: '/statements',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/expenses': typeof ExpensesRoute
   '/forecast': typeof ForecastRoute
   '/goals': typeof GoalsRoute
+  '/statements': typeof StatementsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/expenses': typeof ExpensesRoute
   '/forecast': typeof ForecastRoute
   '/goals': typeof GoalsRoute
+  '/statements': typeof StatementsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +70,22 @@ export interface FileRoutesById {
   '/expenses': typeof ExpensesRoute
   '/forecast': typeof ForecastRoute
   '/goals': typeof GoalsRoute
+  '/statements': typeof StatementsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/credits' | '/expenses' | '/forecast' | '/goals'
+  fullPaths:
+    '/' | '/credits' | '/expenses' | '/forecast' | '/goals' | '/statements'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/credits' | '/expenses' | '/forecast' | '/goals'
-  id: '__root__' | '/' | '/credits' | '/expenses' | '/forecast' | '/goals'
+  to: '/' | '/credits' | '/expenses' | '/forecast' | '/goals' | '/statements'
+  id:
+    | '__root__'
+    | '/'
+    | '/credits'
+    | '/expenses'
+    | '/forecast'
+    | '/goals'
+    | '/statements'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,6 +94,7 @@ export interface RootRouteChildren {
   ExpensesRoute: typeof ExpensesRoute
   ForecastRoute: typeof ForecastRoute
   GoalsRoute: typeof GoalsRoute
+  StatementsRoute: typeof StatementsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -116,6 +134,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GoalsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/statements': {
+      id: '/statements'
+      path: '/statements'
+      fullPath: '/statements'
+      preLoaderRoute: typeof StatementsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -125,6 +150,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExpensesRoute: ExpensesRoute,
   ForecastRoute: ForecastRoute,
   GoalsRoute: GoalsRoute,
+  StatementsRoute: StatementsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
