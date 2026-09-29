@@ -37,7 +37,7 @@ export function monthLabel(key: MonthKey) {
 
 export function monthShort(key: MonthKey) {
   const [, m] = key.split("-");
-  return MONTH_NAMES[Number(m) - 1].slice(0, 3);
+  return (MONTH_NAMES[Number(m) - 1] ?? "").slice(0, 3);
 }
 
 function limits(oct: number, nov: number): Record<MonthKey, number> {
