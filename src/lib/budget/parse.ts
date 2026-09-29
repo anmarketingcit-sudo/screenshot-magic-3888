@@ -30,13 +30,15 @@ function hashOf(parts: string) {
 function normDate(raw: string, fallbackYear: number): string | null {
   let m = raw.match(/(\d{2})[.\-/](\d{2})[.\-/](\d{2,4})/);
   if (m) {
-    const year = m[3].length === 2 ? `20${m[3]}` : m[3];
-    return `${year}-${m[2]}-${m[1]}`;
+    const [, dd = "", mm = "", yy = ""] = m;
+    const year = yy.length === 2 ? `20${yy}` : yy;
+    return `${year}-${mm}-${dd}`;
   }
   m = raw.match(/(\d{1,2})\s+([а-яё]{3})[а-яё.]*\s*(\d{4})?/i);
   if (m) {
-    const mm = MONTHS_RU[m[2].toLowerCase()];
-    if (mm) return `${m[3] ?? fallbackYear}-${mm}-${m[1].padStart(2, "0")}`;
+    const [, dd = "", name = "", yy] = m;
+    const mm = MONTHS_RU[name.toLowerCase()];
+    if (mm) return `${yy ?? fallbackYear}-${mm}-${dd.padStart(2, "0")}`;
   }
   return null;
 }
@@ -79,7 +81,7 @@ export function parseStatement(
 
     const amountMatch = source.match(/([+\-−]?\s?\d[\d\s\u00a0.,]*)\s*(?:₸|тг|kzt|т)\b/i);
     if (!amountMatch) return;
-    const rawAmount = amountMatch[1].replace(/[\s\u00a0]/g, "").replace(",", ".");
+    const rawAmount = (amountMatch[1] ?? "").replace(/[\s\u00a0]/g, "").replace(",", ".");
     const isIncome = /^[+]/.test(rawAmount) || /зарплат|алимент|пополнение|поступлен/i.test(source);
     const amount = Math.abs(parseFloat(rawAmount.replace(/[+\-−]/g, "")));
     if (!Number.isFinite(amount) || amount === 0) return;

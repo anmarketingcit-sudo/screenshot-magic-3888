@@ -78,7 +78,7 @@ export function monthSummary(state: BudgetState, month: MonthKey) {
 }
 
 export function dailyFlow(state: BudgetState, month: MonthKey) {
-  const [y, m] = month.split("-").map(Number);
+  const [y, m] = month.split("-").map(Number) as [number, number];
   const days = new Date(y, m, 0).getDate();
   let balance = 0;
   const rows = [];
@@ -100,7 +100,8 @@ export function weeklyExpenses(state: BudgetState, month: MonthKey) {
   for (const t of monthTransactions(state, month)) {
     if (!EXPENSE_KINDS.includes(t.kind)) continue;
     const day = Number(t.date.slice(-2));
-    weeks[Math.min(4, Math.floor((day - 1) / 7))] += t.amount;
+    const idx = Math.min(4, Math.max(0, Math.floor((day - 1) / 7)));
+    weeks[idx] = (weeks[idx] ?? 0) + t.amount;
   }
   return weeks.map((v, i) => ({ week: `Неделя ${i + 1}`, Расходы: v }));
 }
