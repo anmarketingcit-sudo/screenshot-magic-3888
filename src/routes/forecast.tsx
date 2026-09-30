@@ -85,7 +85,7 @@ function Forecast() {
   });
 
   const needExtra = Math.max(0, -Math.min(...data.map((d) => d.Итог)));
-  const firstNeed = Math.max(0, -data[0].Итог);
+  const firstNeed = Math.max(0, -(data[0]?.Итог ?? 0));
 
   return (
     <div className="space-y-4">
