@@ -13,6 +13,7 @@ import {
   YAxis,
 } from "recharts";
 import { useBudget } from "@/lib/budget/store";
+import { supabase } from "@/integrations/supabase/client";
 import { MONTHS, monthShort } from "@/lib/budget/seed";
 import { plannedIncome } from "@/lib/budget/calc";
 import { shortTenge, tenge } from "@/lib/budget/format";
@@ -53,8 +54,9 @@ const EMPTY: Scenario = {
 };
 
 function Forecast() {
-  const { state } = useBudget();
+  const { state, userId } = useBudget();
   const [sc, setSc] = useState<Scenario>(EMPTY);
+  const [savedMsg, setSavedMsg] = useState<string | null>(null);
 
   const baseIncome = plannedIncome(state);
   const income = baseIncome + sc.incomeDelta;
@@ -183,10 +185,24 @@ function Forecast() {
             onChange={(v) => setSc({ ...sc, creditDelta: v })}
           />
         </div>
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <ActionButton
+            onClick={async () => {
+              const { error } = await supabase.from("scenarios").insert({
+                user_id: userId,
+                name: `Сценарий ${new Date().toLocaleString("ru-RU")}`,
+                params: sc,
+                result: { firstNeed, needExtra, income, months: data },
+              });
+              setSavedMsg(error ? "Не удалось сохранить" : "Сценарий сохранён");
+            }}
+          >
+            Сохранить сценарий
+          </ActionButton>
           <ActionButton variant="ghost" onClick={() => setSc(EMPTY)}>
             Сбросить сценарий
           </ActionButton>
+          {savedMsg && <span className="num text-xs text-muted-foreground">{savedMsg}</span>}
         </div>
       </Panel>
     </div>
