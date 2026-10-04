@@ -275,7 +275,7 @@ function Dashboard() {
   );
 }
 
-function Kpi({ label, value, hint, tone }: { label: string; value: string; hint: string; tone?: string }) {
+function Kpi({ label, value, hint, tone }: { label: string; value: string; hint: string; tone?: string | undefined }) {
   return (
     <div className="card-panel !p-4 sm:!p-5">
       <p className="text-xs text-muted-foreground">{label}</p>
