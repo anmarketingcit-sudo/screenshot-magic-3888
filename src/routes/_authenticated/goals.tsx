@@ -14,7 +14,7 @@ import { categoryFact, goalSaved } from "@/lib/budget/calc";
 import { percent, shortTenge, tenge } from "@/lib/budget/format";
 import { Bar, NumberInput, Panel } from "@/components/budget/ui";
 
-export const Route = createFileRoute("/goals")({
+export const Route = createFileRoute("/_authenticated/goals")({
   head: () => ({
     meta: [
       { title: "Цели и обязательства — Баланс" },

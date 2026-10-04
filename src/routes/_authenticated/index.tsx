@@ -18,7 +18,7 @@ import { categoryFact, dailyFlow, monthSummary } from "@/lib/budget/calc";
 import { percent, shortTenge, tenge } from "@/lib/budget/format";
 import { Badge, Bar, Panel, SourceTag } from "@/components/budget/ui";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: "Дашборд бюджета — Баланс" },

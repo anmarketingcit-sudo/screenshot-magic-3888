@@ -16,7 +16,7 @@ import { categoryFact, creditPaid, creditTotalPlanned } from "@/lib/budget/calc"
 import { percent, shortTenge, tenge } from "@/lib/budget/format";
 import { Badge, Bar, NumberInput, Panel } from "@/components/budget/ui";
 
-export const Route = createFileRoute("/credits")({
+export const Route = createFileRoute("/_authenticated/credits")({
   head: () => ({
     meta: [
       { title: "Кредиты и график погашения — Баланс" },

@@ -16,7 +16,7 @@ import { categoryFact, monthTransactions, weeklyExpenses, EXPENSE_KINDS } from "
 import { dayLabel, percent, shortTenge, tenge } from "@/lib/budget/format";
 import { ActionButton, Bar, NumberInput, Panel, TextField } from "@/components/budget/ui";
 
-export const Route = createFileRoute("/expenses")({
+export const Route = createFileRoute("/_authenticated/expenses")({
   head: () => ({
     meta: [
       { title: "Расходы по категориям — Баланс" },

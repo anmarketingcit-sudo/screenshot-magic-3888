@@ -4,17 +4,20 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import { seedState, MONTHS, OCT } from "./seed";
+import { loadState, pushDiff, toRows } from "./sync";
 import type { BudgetState, Category, Credit, Goal, MonthKey, Rule, Transaction } from "./types";
-
-const STORAGE_KEY = "budget-state-v1";
 
 type Ctx = {
   state: BudgetState;
   ready: boolean;
+  saving: boolean;
+  syncError: string | null;
+  userId: string;
   month: MonthKey;
   setMonth: (m: MonthKey) => void;
   update: (fn: (s: BudgetState) => BudgetState) => void;
@@ -36,29 +39,56 @@ type Ctx = {
 
 const BudgetContext = createContext<Ctx | null>(null);
 
-export function BudgetProvider({ children }: { children: ReactNode }) {
+export function BudgetProvider({ children, userId }: { children: ReactNode; userId: string }) {
   const [state, setState] = useState<BudgetState>(seedState);
   const [ready, setReady] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [month, setMonth] = useState<MonthKey>(OCT);
+  const synced = useRef<ReturnType<typeof toRows> | null>(null);
 
+  // Загрузка данных пользователя из базы; при первом входе — стартовый план.
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setState({ ...seedState, ...(JSON.parse(raw) as BudgetState) });
-    } catch {
-      /* пустое хранилище */
-    }
-    setReady(true);
-  }, []);
+    let alive = true;
+    (async () => {
+      try {
+        const loaded = await loadState();
+        if (!alive) return;
+        if (loaded) {
+          synced.current = toRows(loaded);
+          setState(loaded);
+        } else {
+          await pushDiff(null, toRows(seedState), userId);
+          synced.current = toRows(seedState);
+          setState(seedState);
+        }
+      } catch (e) {
+        setSyncError(e instanceof Error ? e.message : "Не удалось загрузить данные");
+      }
+      if (alive) setReady(true);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [userId]);
 
+  // Сохранение изменений в базу с небольшой задержкой.
   useEffect(() => {
-    if (!ready) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      /* хранилище недоступно */
-    }
-  }, [state, ready]);
+    if (!ready || !synced.current) return;
+    const next = toRows(state);
+    const t = setTimeout(async () => {
+      setSaving(true);
+      try {
+        await pushDiff(synced.current, next, userId);
+        synced.current = next;
+        setSyncError(null);
+      } catch (e) {
+        setSyncError(e instanceof Error ? e.message : "Не удалось сохранить");
+      }
+      setSaving(false);
+    }, 600);
+    return () => clearTimeout(t);
+  }, [state, ready, userId]);
 
   const update = useCallback((fn: (s: BudgetState) => BudgetState) => setState((s) => fn(s)), []);
 
@@ -66,6 +96,9 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
     () => ({
       state,
       ready,
+      saving,
+      syncError,
+      userId,
       month,
       setMonth,
       update,
@@ -146,8 +179,16 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
         })),
       reset: () => setState(seedState),
     }),
-    [state, ready, month, update],
+    [state, ready, saving, syncError, userId, month, update],
   );
+
+  if (!ready) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-background text-sm text-muted-foreground">
+        Загружаем ваши данные…
+      </div>
+    );
+  }
 
   return <BudgetContext.Provider value={value}>{children}</BudgetContext.Provider>;
 }
