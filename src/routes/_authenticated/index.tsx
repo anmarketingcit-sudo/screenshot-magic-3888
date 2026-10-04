@@ -67,12 +67,12 @@ function Dashboard() {
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <Panel className="lg:col-span-2">
         <div className="flex items-center justify-between">
-          <h1 className="font-display text-lg font-extrabold tracking-tight">Свободный остаток</h1>
+          <h1 className="font-display text-lg font-semibold tracking-tight">Свободный остаток</h1>
           <Badge tone={s.free >= 0 ? "teal" : "rose"}>
             {s.free >= 0 ? "в плюсе" : "дефицит"}
           </Badge>
         </div>
-        <p className="mt-2 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">
+        <p className="mt-2 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
           {new Intl.NumberFormat("ru-RU").format(Math.round(s.free))}{" "}
           <span className="text-2xl text-muted-foreground">₸</span>
         </p>
@@ -99,7 +99,7 @@ function Dashboard() {
         className="rounded-3xl bg-ink p-5 text-background"
         style={{ animation: "rise 500ms var(--ease-soft) both 80ms" }}
       >
-        <h2 className="font-display text-lg font-extrabold tracking-tight">
+        <h2 className="font-display text-lg font-semibold tracking-tight">
           {monthLabel(month)}
         </h2>
         <div className="mt-4 space-y-3">
@@ -338,7 +338,7 @@ function DarkRow({
           style={{ width: `${Math.min(100, Math.max(0, ratio))}%` }}
         />
       </div>
-      <p className="num mt-1 text-[10px] text-background/50">{hint}</p>
+      <p className="num mt-1 text-[11px] text-background/50">{hint}</p>
     </div>
   );
 }

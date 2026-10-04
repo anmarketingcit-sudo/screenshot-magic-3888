@@ -30,11 +30,11 @@ export function AppShell({ children, email }: { children: ReactNode; email: stri
     <div className="min-h-screen bg-background font-body text-ink">
       <header className="sticky top-0 z-20 border-b border-line bg-background/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-5 py-3">
-          <div className="grid size-8 place-items-center rounded-xl bg-ink font-display text-sm font-extrabold text-background">
+          <div className="grid size-8 place-items-center rounded-xl bg-ink font-display text-sm font-semibold text-background">
             Б
           </div>
           <div>
-            <p className="font-display font-extrabold leading-none tracking-tight">Баланс</p>
+            <p className="font-display font-semibold leading-none tracking-tight">Баланс</p>
             <p className="num mt-0.5 text-[11px] text-muted-foreground">
               {syncError ? <span className="text-rose">не сохранено</span> : saving ? "сохраняем…" : "сохранено"}
             </p>
@@ -71,7 +71,7 @@ export function AppShell({ children, email }: { children: ReactNode; email: stri
                 to={item.to}
                 activeOptions={{ exact: item.to === "/" }}
                 className="shrink-0 rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted"
-                activeProps={{ className: "bg-primary text-primary-foreground hover:bg-ink" }}
+                activeProps={{ className: "bg-primary text-primary-foreground hover:bg-primary/90" }}
               >
                 {item.label}
               </Link>
