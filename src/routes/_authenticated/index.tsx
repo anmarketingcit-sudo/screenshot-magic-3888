@@ -16,7 +16,7 @@ import { useBudget } from "@/lib/budget/store";
 import { monthLabel } from "@/lib/budget/seed";
 import { categoryFact, dailyFlow, monthSummary } from "@/lib/budget/calc";
 import { percent, shortTenge, tenge } from "@/lib/budget/format";
-import { Badge, Bar, Panel, SourceTag } from "@/components/budget/ui";
+import { Bar, Panel, SourceTag } from "@/components/budget/ui";
 import { TransactionsPanel } from "@/components/budget/TransactionsPanel";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -63,112 +63,74 @@ function Dashboard() {
     .sort((a, b) => b.left - a.left)
     .slice(0, 4);
 
+  const flatFact = categoryFact(state, "flat", month);
+  const flatPlan = state.categories.find((c) => c.id === "flat")?.limits[month] ?? 0;
+  const hasFlow = flow.some((d) => Number(d.Поступления) > 0 || Number(d.Расходы) > 0);
+
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <Panel className="lg:col-span-2">
-        <div className="flex items-center justify-between">
-          <h1 className="font-display text-lg font-semibold tracking-tight">Свободный остаток</h1>
-          <Badge tone={s.free >= 0 ? "teal" : "rose"}>
-            {s.free >= 0 ? "в плюсе" : "дефицит"}
-          </Badge>
-        </div>
-        <p className="mt-2 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
-          {new Intl.NumberFormat("ru-RU").format(Math.round(s.free))}{" "}
-          <span className="text-2xl text-muted-foreground">₸</span>
-        </p>
-        <div className="mt-4">
-          <Bar value={percent(s.expense, s.planExpense)} tone="ink" height="h-3" />
-        </div>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3">
-          <div className="flex flex-col">
-            <span className="num text-[11px] text-muted-foreground">Ещё нужно заработать</span>
-            <span className="num text-sm font-bold text-amber">{tenge(s.needToEarn)}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="num text-[11px] text-muted-foreground">Расходы к плану</span>
-            <span className="num text-sm font-bold">{percent(s.expense, s.planExpense)}%</span>
-          </div>
-          <div className="flex flex-col items-end">
-            <span className="num text-[11px] text-muted-foreground">Прогноз до конца месяца</span>
-            <span className="num text-sm font-bold">{tenge(s.forecastExpense)}</span>
-          </div>
-        </div>
-      </Panel>
+      <div className="grid grid-cols-2 gap-3 lg:col-span-3 lg:grid-cols-4">
+        <Kpi
+          label="Свободный остаток"
+          value={tenge(s.free)}
+          hint={s.free >= 0 ? "в плюсе" : "дефицит"}
+          tone={s.free >= 0 ? "text-teal" : "text-rose"}
+        />
+        <Kpi label="Ещё нужно заработать" value={tenge(s.needToEarn)} hint="до плана месяца" tone={s.needToEarn > 0 ? "text-amber" : "text-teal"} />
+        <Kpi
+          label="Расходы к плану"
+          value={`${percent(s.expense, s.planExpense)}%`}
+          hint={percent(s.expense, s.planExpense) > 100 ? "превышение лимита" : `из ${tenge(s.planExpense)}`}
+          tone={percent(s.expense, s.planExpense) > 100 ? "text-rose" : undefined}
+        />
+        <Kpi label="Прогноз расходов" value={tenge(s.forecastExpense)} hint="до конца месяца" />
+      </div>
 
-      <section
-        className="rounded-3xl bg-ink p-5 text-background"
-        style={{ animation: "rise 500ms var(--ease-soft) both 80ms" }}
-      >
-        <h2 className="font-display text-lg font-semibold tracking-tight">
-          {monthLabel(month)}
-        </h2>
-        <div className="mt-4 space-y-3">
-          <DarkRow
-            label="Поступления"
-            value={tenge(s.income)}
-            hint={`план ${tenge(s.planIncome)}`}
-            ratio={percent(s.income, s.planIncome)}
-            tone="bg-teal"
-          />
-          <DarkRow
+      <Panel title={monthLabel(month)} aside="факт и план" className="lg:col-span-3" delay={60}>
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+          <MonthRow label="Поступления" value={tenge(s.income)} hint={`план ${tenge(s.planIncome)}`} ratio={percent(s.income, s.planIncome)} tone="bg-teal" />
+          <MonthRow
             label="Расходы"
             value={tenge(s.expense)}
             hint={`лимит ${tenge(s.planExpense)}`}
             ratio={percent(s.expense, s.planExpense)}
-            tone="bg-rose"
+            tone={percent(s.expense, s.planExpense) > 100 ? "bg-rose" : "bg-primary"}
           />
-          <DarkRow
-            label="Накопления на квартиру"
-            value={tenge(categoryFact(state, "flat", month))}
-            hint={`цель ${tenge(state.categories.find((c) => c.id === "flat")?.limits[month] ?? 0)}`}
-            ratio={percent(
-              categoryFact(state, "flat", month),
-              state.categories.find((c) => c.id === "flat")?.limits[month] ?? 0,
-            )}
-            tone="bg-violet"
-          />
+          <MonthRow label="Накопления на квартиру" value={tenge(flatFact)} hint={`цель ${tenge(flatPlan)}`} ratio={percent(flatFact, flatPlan)} tone="bg-violet" />
         </div>
-      </section>
+      </Panel>
 
-      <Panel
-        title="Движение денег"
-        aside="по дням, ₸"
-        className="lg:col-span-3"
-        delay={140}
-      >
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={flow}>
-              <CartesianGrid stroke="var(--line)" vertical={false} />
-              <XAxis dataKey="day" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-              <YAxis
-                tickFormatter={(v) => shortTenge(Number(v))}
-                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                width={60}
-              />
-              <Tooltip
-                formatter={(v: number | string) => tenge(Number(v))}
-                contentStyle={{
-                  borderRadius: 12,
-                  border: "1px solid var(--line)",
-                  background: "var(--surface)",
-                  fontSize: 12,
-                }}
-              />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-              <RBar dataKey="Поступления" fill="var(--teal)" radius={[4, 4, 0, 0]} />
-              <RBar dataKey="Расходы" fill="var(--rose)" radius={[4, 4, 0, 0]} />
-              <Line
-                type="monotone"
-                dataKey="Остаток"
-                stroke="var(--ink)"
-                strokeWidth={2}
-                dot={false}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+      <Panel title="Движение денег" aside="по дням, ₸" className="lg:col-span-3" delay={100}>
+        {hasFlow ? (
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={flow} margin={{ left: -8, right: 4 }}>
+                <CartesianGrid stroke="var(--line)" vertical={false} />
+                <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+                <YAxis
+                  tickFormatter={(v) => shortTenge(Number(v))}
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                  width={56}
+                />
+                <Tooltip
+                  formatter={(v: number | string) => tenge(Number(v))}
+                  contentStyle={{ borderRadius: 14, border: "1px solid var(--line)", background: "var(--surface)", fontSize: 12 }}
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} />
+                <RBar dataKey="Поступления" fill="var(--teal)" radius={[4, 4, 0, 0]} maxBarSize={14} />
+                <RBar dataKey="Расходы" fill="var(--primary)" fillOpacity={0.75} radius={[4, 4, 0, 0]} maxBarSize={14} />
+                <Line type="monotone" dataKey="Остаток" stroke="var(--muted-foreground)" strokeWidth={1.5} dot={false} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="grid h-40 place-items-center rounded-2xl bg-muted text-sm text-muted-foreground">
+            Пока нет операций за этот месяц
+          </div>
+        )}
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <SourceTag source="факт" /> из выписки
           <SourceTag source="вручную" /> внесено руками
           <SourceTag source="прогноз" /> расчёт до конца месяца
@@ -313,32 +275,30 @@ function Dashboard() {
   );
 }
 
-function DarkRow({
-  label,
-  value,
-  hint,
-  ratio,
-  tone,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  ratio: number;
-  tone: string;
-}) {
+function Kpi({ label, value, hint, tone }: { label: string; value: string; hint: string; tone?: string }) {
   return (
-    <div>
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-background/70">{label}</span>
-        <span className="num font-bold">{value}</span>
+    <div className="card-panel !p-4 sm:!p-5">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="num mt-1 truncate text-xl font-semibold tracking-tight sm:text-2xl">{value}</p>
+      <p className={`mt-1 text-xs ${tone ?? "text-muted-foreground"}`}>{hint}</p>
+    </div>
+  );
+}
+
+function MonthRow({ label, value, hint, ratio, tone }: { label: string; value: string; hint: string; ratio: number; tone: string }) {
+  return (
+    <div className="min-w-0">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="truncate text-sm text-muted-foreground">{label}</span>
+        <span className="num shrink-0 text-base font-semibold">{value}</span>
       </div>
-      <div className="mt-2 h-2 rounded-full bg-background/15">
-        <div
-          className={`h-full rounded-full ${tone}`}
-          style={{ width: `${Math.min(100, Math.max(0, ratio))}%` }}
-        />
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+        <div className={`h-full rounded-full ${tone}`} style={{ width: `${Math.min(100, Math.max(0, ratio))}%` }} />
       </div>
-      <p className="num mt-1 text-[11px] text-background/50">{hint}</p>
+      <div className="mt-1.5 flex justify-between text-xs text-muted-foreground">
+        <span>{hint}</span>
+        <span className="num">{ratio}%</span>
+      </div>
     </div>
   );
 }
