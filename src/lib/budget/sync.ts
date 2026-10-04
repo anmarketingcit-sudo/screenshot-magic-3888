@@ -75,7 +75,7 @@ export async function loadState(): Promise<BudgetState | null> {
   );
   const err = results.find((r) => r.error)?.error;
   if (err) throw err;
-  if ((results[0]?.data ?? []).length === 0) return null;
+  if (results.every((r) => (r.data ?? []).length === 0)) return null;
   const state = {} as BudgetState;
   TABLES.forEach((t, i) => {
     (state as any)[t] = ((results[i]?.data ?? []) as any[]).map((r) => (MAP[t] as any).from(r));

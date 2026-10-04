@@ -53,6 +53,36 @@ function detectKind(description: string, isIncome: boolean): TxKind {
   return isIncome ? "income" : "expense";
 }
 
+/** Разбирает сумму: «1 234,56», «1,234.56», «1.234,56», «12.500». */
+export function parseAmount(raw: string): number {
+  let v = raw.replace(/[\s\u00a0+\-−]/g, "");
+  const lc = v.lastIndexOf(","), ld = v.lastIndexOf(".");
+  if (lc >= 0 && ld >= 0) {
+    const dec = lc > ld ? "," : ".";
+    const th = dec === "," ? "." : ",";
+    v = v.split(th).join("").replace(dec, ".");
+  } else if (lc >= 0 || ld >= 0) {
+    const sep = lc >= 0 ? "," : ".";
+    const parts = v.split(sep);
+    const last = parts[parts.length - 1] ?? "";
+    if (parts.length > 2 || last.length === 3) v = parts.join("");
+    else v = parts.join(".");
+  }
+  return Math.abs(parseFloat(v));
+}
+
+const SKIP_LINE = /остаток|доступно|баланс|итого|всего|обороты|лимит|период/i;
+
+/** Возвращает hash с номером вхождения внутри файла (#1, #2…). */
+function occurrenceHasher() {
+  const seen = new Map<string, number>();
+  return (base: string) => {
+    const n = (seen.get(base) ?? 0) + 1;
+    seen.set(base, n);
+    return hashOf(`${base}#${n}`);
+  };
+}
+
 export function applyRules(description: string, rules: Rule[]) {
   const d = description.toLowerCase();
   return rules.find((r) => r.match && d.includes(r.match.toLowerCase())) ?? null;
@@ -68,6 +98,7 @@ export function parseStatement(
 ): ParsedRow[] {
   const year = opts.year ?? new Date().getFullYear();
   const rows: ParsedRow[] = [];
+  const nextHash = occurrenceHasher();
   const lines = text
     .split(/\r?\n/)
     .map((l) => l.trim())
@@ -76,15 +107,16 @@ export function parseStatement(
   lines.forEach((line, index) => {
     const cells = line.includes(";") ? line.split(";") : line.includes("\t") ? line.split("\t") : null;
     const source = cells ? cells.join(" ") : line;
+    if (SKIP_LINE.test(source)) return;
     const date = normDate(source, year);
     if (!date) return;
 
     // ₸ — не буква, поэтому \b после него не срабатывал и суммы не находились.
     const amountMatch = source.match(/([+\-−]?\s?\d[\d\s\u00a0.,]*?)\s*(?:₸|тг\.?|kzt|т\.)(?=\s|$|[^\p{L}\d])/iu);
     if (!amountMatch) return;
-    const rawAmount = (amountMatch[1] ?? "").replace(/[\s\u00a0]/g, "").replace(",", ".");
+    const rawAmount = (amountMatch[1] ?? "").replace(/[\s\u00a0]/g, "");
     const isIncome = /^[+]/.test(rawAmount) || /зарплат|алимент|пополнение|поступлен/i.test(source);
-    const amount = Math.abs(parseFloat(rawAmount.replace(/[+\-−]/g, "")));
+    const amount = parseAmount(rawAmount);
     if (!Number.isFinite(amount) || amount === 0) return;
 
     const description = source
@@ -106,7 +138,7 @@ export function parseStatement(
       bank: opts.bank,
       card: opts.card,
       source: "statement",
-      hash: hashOf(`${date}|${amount}|${description}|${opts.bank}`),
+      hash: nextHash(`${date}|${amount}|${description}|${opts.bank}`),
     });
   });
 
@@ -120,13 +152,14 @@ export function manualTransaction(data: {
   categoryId: string | null;
   kind: TxKind;
 }): Transaction {
+  const id = `m-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   return {
-    id: `m-${Date.now()}`,
+    id,
     ...data,
     bank: "Вручную",
     card: "",
     source: "manual",
-    hash: hashOf(`${data.date}|${data.amount}|${data.description}|manual`),
+    hash: hashOf(`${data.date}|${data.amount}|${data.description}|manual|${id}`),
   };
 }
 
@@ -141,6 +174,7 @@ export function fromAiRows(
   items: { date: string; amount: number; type: "income" | "expense"; description: string; category: string | null }[],
   opts: { bank: string; card: string; rules: Rule[]; categories: { id: string; name: string }[] },
 ): ParsedRow[] {
+  const nextHash = occurrenceHasher();
   return items
     .filter((it) => /^\d{4}-\d{2}-\d{2}$/.test(it.date) && Number.isFinite(it.amount) && it.amount !== 0)
     .map((it, index) => {
@@ -160,7 +194,7 @@ export function fromAiRows(
         bank: opts.bank,
         card: opts.card,
         source: "statement" as const,
-        hash: hashOf(`${it.date}|${amount}|${description}|${opts.bank}`),
+        hash: nextHash(`${it.date}|${amount}|${description}|${opts.bank}`),
       };
     });
 }
