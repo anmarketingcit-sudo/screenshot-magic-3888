@@ -218,7 +218,7 @@ function Statements() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder={"01.10.2026  -12 500 ₸  Magnum продукты\n03.10.2026  +956 375 ₸  Зарплата"}
-            className="mt-2 h-32 w-full rounded-xl border border-line bg-surface p-3 font-mono text-xs outline-none focus:border-ink"
+            className="mt-2 h-32 w-full rounded-xl border border-line bg-surface p-3 text-xs outline-none focus:border-primary"
           />
           <ActionButton variant="ghost" onClick={() => parse(text)}>
             Разобрать текст

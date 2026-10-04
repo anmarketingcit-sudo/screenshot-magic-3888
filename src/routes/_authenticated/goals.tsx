@@ -57,7 +57,7 @@ function Goals() {
           <Panel key={goal.id} title={goal.name} delay={80 + i * 60}>
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
               <div className="lg:col-span-1">
-                <p className="font-display text-3xl font-extrabold">{tenge(saved)}</p>
+                <p className="font-display text-3xl font-semibold">{tenge(saved)}</p>
                 <p className="num text-[11px] text-muted-foreground">
                   из {tenge(goal.target)} · остаток {tenge(left)}
                 </p>

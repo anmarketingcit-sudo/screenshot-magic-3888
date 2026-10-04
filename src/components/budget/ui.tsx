@@ -21,7 +21,7 @@ export function Panel({
     >
       {(title || aside) && (
         <div className="mb-4 flex items-center justify-between gap-3">
-          {title && <h2 className="font-display text-base font-extrabold tracking-tight">{title}</h2>}
+          {title && <h2 className="font-display text-base font-semibold tracking-tight">{title}</h2>}
           {aside && <div className="num text-[11px] text-muted-foreground">{aside}</div>}
         </div>
       )}
@@ -141,7 +141,7 @@ export function NumberInput({
       value={Number.isFinite(value) ? value : 0}
       onChange={(e) => onChange(Number(e.target.value))}
       className={cn(
-        "num w-32 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-right text-sm outline-none focus:border-ink",
+        "num w-32 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-right text-sm outline-none focus:border-primary",
         className,
       )}
     />
@@ -168,7 +168,7 @@ export function TextField({
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
       className={cn(
-        "rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-ink",
+        "rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-primary",
         className,
       )}
     />
@@ -193,9 +193,9 @@ export function ActionButton({
       type={type}
       onClick={onClick}
       className={cn(
-        "rounded-xl px-4 py-2 text-sm font-semibold transition-colors",
+        "min-h-11 rounded-full px-5 py-2 text-sm font-semibold transition-colors",
         variant === "solid"
-          ? "bg-ink text-background hover:bg-ink/90"
+          ? "bg-primary text-primary-foreground hover:bg-primary/90"
           : "border border-line bg-surface hover:bg-muted",
         className,
       )}

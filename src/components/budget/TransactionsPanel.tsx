@@ -15,7 +15,7 @@ const KINDS: { v: TxKind; l: string }[] = [
   { v: "deposit", l: "С депозита" },
 ];
 
-const input = "rounded-lg border border-line bg-surface px-2 py-1 text-xs outline-none focus:border-ink";
+const input = "rounded-lg border border-line bg-surface px-2 py-1 text-xs outline-none focus:border-primary";
 
 export function TransactionsPanel() {
   const { state, month, update, removeTransaction } = useBudget();
@@ -64,7 +64,7 @@ export function TransactionsPanel() {
                 </select>
                 <input value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} className={`${input} col-span-2 sm:col-span-1`} />
                 <div className="col-span-2 flex gap-2 sm:col-span-1">
-                  <button onClick={save} className="rounded-full bg-ink px-3 py-1 text-xs font-semibold text-background">Сохранить</button>
+                  <button onClick={save} className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">Сохранить</button>
                   <button onClick={() => setEditId(null)} className="rounded-full border border-line px-3 py-1 text-xs">Отмена</button>
                 </div>
               </li>

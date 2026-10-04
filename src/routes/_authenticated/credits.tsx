@@ -45,7 +45,7 @@ function Credits() {
         <div className="flex flex-wrap items-end gap-6">
           <div>
             <p className="num text-[11px] text-muted-foreground">Всего по кредитам</p>
-            <p className="font-display text-3xl font-extrabold">{tenge(totalThisMonth)}</p>
+            <p className="font-display text-3xl font-semibold">{tenge(totalThisMonth)}</p>
           </div>
           {state.credits.map((c) => {
             const last = MONTHS.filter((m) => (c.schedule[m] ?? 0) > 0).pop();
@@ -96,7 +96,7 @@ function Credits() {
                 <p className="num mt-3 text-[11px] text-muted-foreground">
                   Запланировано платежей
                 </p>
-                <p className="font-display text-2xl font-extrabold">{tenge(planned)}</p>
+                <p className="font-display text-2xl font-semibold">{tenge(planned)}</p>
                 <p className="num mt-2 text-[11px] text-muted-foreground">Оплачено фактом</p>
                 <p className="num text-lg font-bold text-teal">{tenge(paid)}</p>
                 <div className="mt-3">
