@@ -79,7 +79,8 @@ export function parseStatement(
     const date = normDate(source, year);
     if (!date) return;
 
-    const amountMatch = source.match(/([+\-−]?\s?\d[\d\s\u00a0.,]*)\s*(?:₸|тг|kzt|т)\b/i);
+    // ₸ — не буква, поэтому \b после него не срабатывал и суммы не находились.
+    const amountMatch = source.match(/([+\-−]?\s?\d[\d\s\u00a0.,]*?)\s*(?:₸|тг\.?|kzt|т\.)(?=\s|$|[^\p{L}\d])/iu);
     if (!amountMatch) return;
     const rawAmount = (amountMatch[1] ?? "").replace(/[\s\u00a0]/g, "").replace(",", ".");
     const isIncome = /^[+]/.test(rawAmount) || /зарплат|алимент|пополнение|поступлен/i.test(source);
@@ -131,24 +132,35 @@ export function manualTransaction(data: {
 
 /** Извлекает текст из PDF в браузере. */
 export async function pdfToText(file: File): Promise<string> {
-  const pdfjs: any = await import("pdfjs-dist");
-  const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
-  pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
-  const data = new Uint8Array(await file.arrayBuffer());
-  const doc = await pdfjs.getDocument({ data }).promise;
-  let out = "";
-  for (let p = 1; p <= doc.numPages; p++) {
-    const page = await doc.getPage(p);
-    const content = await page.getTextContent();
-    const byLine = new Map<number, string[]>();
-    for (const item of content.items as any[]) {
-      const y = Math.round(item.transform[5]);
-      const arr = byLine.get(y) ?? [];
-      arr.push(item.str);
-      byLine.set(y, arr);
-    }
-    const sorted = [...byLine.entries()].sort((a, b) => b[0] - a[0]);
-    out += sorted.map(([, parts]) => parts.join(" ")).join("\n") + "\n";
-  }
-  return out;
+  const { extractPdfText } = await import("./pdf");
+  return extractPdfText(file);
+}
+
+/** Превращает операции, найденные ИИ, в строки для проверки. */
+export function fromAiRows(
+  items: { date: string; amount: number; type: "income" | "expense"; description: string; category: string | null }[],
+  opts: { bank: string; card: string; rules: Rule[]; categories: { id: string; name: string }[] },
+): ParsedRow[] {
+  return items
+    .filter((it) => /^\d{4}-\d{2}-\d{2}$/.test(it.date) && Number.isFinite(it.amount) && it.amount !== 0)
+    .map((it, index) => {
+      const amount = Math.abs(it.amount);
+      const description = it.description?.trim() || "Операция без описания";
+      const rule = applyRules(description, opts.rules);
+      const byName = it.category
+        ? opts.categories.find((c) => c.name.toLowerCase() === it.category!.toLowerCase())
+        : undefined;
+      return {
+        id: `t-${Date.now()}-${index}`,
+        date: it.date,
+        amount,
+        description,
+        categoryId: rule?.categoryId ?? byName?.id ?? null,
+        kind: rule?.kind ?? detectKind(description, it.type === "income"),
+        bank: opts.bank,
+        card: opts.card,
+        source: "statement" as const,
+        hash: hashOf(`${it.date}|${amount}|${description}|${opts.bank}`),
+      };
+    });
 }

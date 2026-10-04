@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useRef, useState } from "react";
 import { useBudget } from "@/lib/budget/store";
-import { manualTransaction, parseStatement, pdfToText, type ParsedRow } from "@/lib/budget/parse";
+import { fromAiRows, manualTransaction, parseStatement, pdfToText, type ParsedRow } from "@/lib/budget/parse";
+import { extractWithAi } from "@/lib/budget/ai-extract.functions";
 import type { TxKind } from "@/lib/budget/types";
 import { dayLabel, maskCard, tenge } from "@/lib/budget/format";
 import { monthTransactions } from "@/lib/budget/calc";
@@ -35,42 +37,106 @@ const KINDS: { value: TxKind; label: string }[] = [
   { value: "deposit", label: "С депозита" },
 ];
 
+const MAX_MB = 10;
+
+function toBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(",")[1] ?? "");
+    r.onerror = () => reject(new Error("Не удалось прочитать файл"));
+    r.readAsDataURL(file);
+  });
+}
+
 function Statements() {
-  const { state, month, addTransactions, setTransactionCategory, removeTransaction, addRule } =
+  const { state, month, addTransactions, setTransactionCategory, removeTransaction, addRule, syncError } =
     useBudget();
+  const aiExtract = useServerFn(extractWithAi);
   const [bank, setBank] = useState("Kaspi Gold");
   const [card, setCard] = useState("4400 4301 1234 5678");
   const [text, setText] = useState("");
   const [rows, setRows] = useState<ParsedRow[]>([]);
-  const [status, setStatus] = useState<string | null>(null);
+  const [skip, setSkip] = useState<Set<string>>(new Set());
+  const [status, setStatus] = useState<{ tone: "info" | "error" | "ok"; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [drag, setDrag] = useState(false);
   const [controlTotal, setControlTotal] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const showRows = (parsed: ParsedRow[], how: string) => {
+    setRows(parsed);
+    setSkip(new Set());
+    setStatus({ tone: "ok", text: `${how}: найдено операций — ${parsed.length}. Проверьте и нажмите «Сохранить».` });
+  };
+
   const parse = (source: string) => {
     const parsed = parseStatement(source, { bank, card, rules: state.rules });
-    setRows(parsed);
-    setStatus(
-      parsed.length
-        ? `Найдено операций: ${parsed.length}. Проверьте категории перед импортом.`
-        : "Не удалось распознать операции. Вставьте текст выписки построчно: дата, сумма в ₸, описание.",
-    );
+    if (parsed.length) showRows(parsed, "Текст разобран");
+    else
+      setStatus({
+        tone: "error",
+        text: "В тексте не найдено операций. Нужны строки вида: дата, сумма в ₸, описание.",
+      });
+  };
+
+  const runAi = async (file: File, mimeType: "application/pdf" | "image/jpeg" | "image/png" | "image/webp") => {
+    setStatus({ tone: "info", text: "Текст не найден — распознаю файл с помощью ИИ, это займёт до минуты…" });
+    const base64 = await toBase64(file);
+    const res = await aiExtract({
+      data: { fileName: file.name, mimeType, base64, categories: state.categories.map((c) => c.name) },
+    });
+    if (res.error) throw new Error(res.error);
+    const parsed = fromAiRows(res.items, { bank, card, rules: state.rules, categories: state.categories });
+    if (!parsed.length) throw new Error("В файле не удалось найти ни одной операции.");
+    showRows(parsed, "Распознано ИИ");
   };
 
   const onFile = async (file: File) => {
-    setStatus("Читаю файл…");
+    if (file.size > MAX_MB * 1024 * 1024) {
+      setStatus({ tone: "error", text: `Файл больше ${MAX_MB} МБ. Загрузите файл поменьше.` });
+      return;
+    }
+    const name = file.name.toLowerCase();
+    const isPdf = file.type === "application/pdf" || name.endsWith(".pdf");
+    const image = (["image/jpeg", "image/png", "image/webp"] as const).find((t) => t === file.type);
+    setBusy(true);
+    setRows([]);
     try {
-      const content =
-        file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")
-          ? await pdfToText(file)
-          : await file.text();
-      setText(content);
-      parse(content);
-    } catch {
-      setStatus("Не удалось прочитать файл. Попробуйте вставить текст выписки вручную.");
+      if (isPdf) {
+        setStatus({ tone: "info", text: "Читаю PDF…" });
+        let content = "";
+        try {
+          content = await pdfToText(file);
+        } catch (e) {
+          console.error("PDF text extraction failed", e);
+          const msg = e instanceof Error ? e.message : "";
+          if (/password/i.test(msg)) throw new Error("PDF защищён паролем. Снимите защиту и загрузите снова.");
+        }
+        setText(content);
+        const parsed = content.trim()
+          ? parseStatement(content, { bank, card, rules: state.rules })
+          : [];
+        if (parsed.length) showRows(parsed, "PDF прочитан");
+        else await runAi(file, "application/pdf");
+      } else if (image) {
+        await runAi(file, image);
+      } else if (name.endsWith(".csv") || name.endsWith(".txt")) {
+        const content = await file.text();
+        setText(content);
+        parse(content);
+      } else {
+        throw new Error("Этот формат не поддерживается. Загрузите PDF, фото (JPG, PNG), CSV или TXT.");
+      }
+    } catch (e) {
+      console.error(e);
+      setStatus({ tone: "error", text: e instanceof Error ? e.message : "Не удалось обработать файл." });
+    } finally {
+      setBusy(false);
     }
   };
 
-  const parsedSum = rows
+  const selected = rows.filter((r) => !skip.has(r.id));
+  const parsedSum = selected
     .filter((r) => r.kind === "expense" || r.kind === "loan")
     .reduce((s, r) => s + r.amount, 0);
   const control = Number(controlTotal.replace(/\D/g, ""));
@@ -78,10 +144,15 @@ function Statements() {
 
   const monthTx = monthTransactions(state, month);
   const unsorted = state.transactions.filter((t) => !t.categoryId && t.kind !== "transfer");
+  const patch = (i: number, p: Partial<ParsedRow>) => {
+    const next = [...rows];
+    next[i] = { ...rows[i]!, ...p };
+    setRows(next);
+  };
 
   return (
     <div className="space-y-4">
-      <Panel title="Загрузка выписки" aside="PDF · текст · CSV">
+      <Panel title="Загрузка выписки или чека" aside="PDF · фото · CSV">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="text-sm">
             <span className="num text-[11px] text-muted-foreground">Банк</span>
@@ -103,34 +174,76 @@ function Statements() {
           </label>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".pdf,.csv,.txt"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void onFile(f);
-            }}
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".pdf,.csv,.txt,image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void onFile(f);
+            e.target.value = "";
+          }}
+        />
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => fileRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDrag(true);
+          }}
+          onDragLeave={() => setDrag(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDrag(false);
+            const f = e.dataTransfer.files?.[0];
+            if (f) void onFile(f);
+          }}
+          className={`mt-3 grid w-full place-items-center rounded-2xl border-2 border-dashed px-4 py-8 text-center transition-colors ${
+            drag ? "border-ink bg-muted" : "border-line bg-surface"
+          } ${busy ? "opacity-60" : ""}`}
+        >
+          <span className="font-display text-sm font-bold">
+            {busy ? "Обрабатываю файл…" : "Перетащите файл сюда или нажмите, чтобы выбрать"}
+          </span>
+          <span className="num mt-1 text-[11px] text-muted-foreground">
+            Выписка или чек: PDF, фото JPG/PNG, CSV · до {MAX_MB} МБ · карта: {maskCard(card)}
+          </span>
+        </button>
+
+        <details className="mt-3">
+          <summary className="cursor-pointer text-xs text-muted-foreground">Или вставьте текст выписки</summary>
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={"01.10.2026  -12 500 ₸  Magnum продукты\n03.10.2026  +956 375 ₸  Зарплата"}
+            className="mt-2 h-32 w-full rounded-xl border border-line bg-surface p-3 font-mono text-xs outline-none focus:border-ink"
           />
-          <ActionButton onClick={() => fileRef.current?.click()}>Выбрать файл</ActionButton>
           <ActionButton variant="ghost" onClick={() => parse(text)}>
             Разобрать текст
           </ActionButton>
-          <span className="num text-[11px] text-muted-foreground">
-            Карта на экране: {maskCard(card)}
-          </span>
-        </div>
+        </details>
 
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder={"01.10.2026  -12 500 ₸  Magnum продукты\n03.10.2026  +956 375 ₸  Зарплата"}
-          className="mt-3 h-32 w-full rounded-xl border border-line bg-surface p-3 font-mono text-xs outline-none focus:border-ink"
-        />
-
-        {status && <p className="mt-2 text-sm text-muted-foreground">{status}</p>}
+        {status && (
+          <p
+            role={status.tone === "error" ? "alert" : "status"}
+            className={`mt-3 rounded-xl px-3 py-2 text-sm ${
+              status.tone === "error"
+                ? "bg-rose/10 text-rose"
+                : status.tone === "ok"
+                  ? "bg-teal/10 text-teal"
+                  : "bg-muted text-muted-foreground"
+            }`}
+          >
+            {status.text}
+          </p>
+        )}
+        {syncError && (
+          <p className="mt-2 rounded-xl bg-rose/10 px-3 py-2 text-sm text-rose">
+            Не удалось сохранить в базу: {syncError}
+          </p>
+        )}
       </Panel>
 
       {rows.length > 0 && (
@@ -157,26 +270,56 @@ function Statements() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="num border-b border-line text-left text-[11px] text-muted-foreground">
-                  <th className="py-2">Дата</th>
+                  <th className="py-2 pr-2">
+                    <input
+                      type="checkbox"
+                      aria-label="Выбрать все"
+                      checked={skip.size === 0}
+                      onChange={(e) => setSkip(e.target.checked ? new Set() : new Set(rows.map((r) => r.id)))}
+                    />
+                  </th>
+                  <th>Дата</th>
                   <th>Описание</th>
                   <th>Тип</th>
                   <th>Категория</th>
-                  <th className="text-right">Сумма</th>
+                  <th className="text-right">Сумма, ₸</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row, i) => (
-                  <tr key={row.id} className="border-b border-line">
-                    <td className="num py-2 text-xs text-muted-foreground">{dayLabel(row.date)}</td>
-                    <td className="max-w-[240px] truncate pr-2">{row.description}</td>
-                    <td>
+                  <tr key={row.id} className={`border-b border-line ${skip.has(row.id) ? "opacity-40" : ""}`}>
+                    <td className="py-2 pr-2">
+                      <input
+                        type="checkbox"
+                        aria-label="Сохранить операцию"
+                        checked={!skip.has(row.id)}
+                        onChange={(e) => {
+                          const next = new Set(skip);
+                          if (e.target.checked) next.delete(row.id);
+                          else next.add(row.id);
+                          setSkip(next);
+                        }}
+                      />
+                    </td>
+                    <td className="pr-1">
+                      <input
+                        type="date"
+                        value={row.date}
+                        onChange={(e) => patch(i, { date: e.target.value })}
+                        className="rounded-lg border border-line bg-surface px-1.5 py-1 text-xs"
+                      />
+                    </td>
+                    <td className="pr-1">
+                      <input
+                        value={row.description}
+                        onChange={(e) => patch(i, { description: e.target.value })}
+                        className="w-48 rounded-lg border border-line bg-surface px-2 py-1 text-xs"
+                      />
+                    </td>
+                    <td className="pr-1">
                       <select
                         value={row.kind}
-                        onChange={(e) => {
-                          const next = [...rows];
-                          next[i] = { ...row, kind: e.target.value as TxKind };
-                          setRows(next);
-                        }}
+                        onChange={(e) => patch(i, { kind: e.target.value as TxKind })}
                         className="rounded-lg border border-line bg-surface px-2 py-1 text-xs"
                       >
                         {KINDS.map((k) => (
@@ -186,22 +329,10 @@ function Statements() {
                         ))}
                       </select>
                     </td>
-                    <td>
+                    <td className="pr-1">
                       <select
                         value={row.categoryId ?? ""}
-                        onChange={(e) => {
-                          const next = [...rows];
-                          next[i] = { ...row, categoryId: e.target.value || null };
-                          setRows(next);
-                          if (e.target.value) {
-                            addRule({
-                              id: `r-${Date.now()}-${i}`,
-                              match: row.description.toLowerCase().slice(0, 18),
-                              categoryId: e.target.value,
-                              kind: row.kind,
-                            });
-                          }
-                        }}
+                        onChange={(e) => patch(i, { categoryId: e.target.value || null })}
                         className="rounded-lg border border-line bg-surface px-2 py-1 text-xs"
                       >
                         <option value="">Не распределено</option>
@@ -212,24 +343,52 @@ function Statements() {
                         ))}
                       </select>
                     </td>
-                    <td className="num py-2 text-right font-bold">{tenge(row.amount)}</td>
+                    <td className="text-right">
+                      <input
+                        type="number"
+                        min={0}
+                        value={row.amount}
+                        onChange={(e) => patch(i, { amount: Math.abs(Number(e.target.value)) })}
+                        className="num w-28 rounded-lg border border-line bg-surface px-2 py-1 text-right text-xs font-bold"
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-wrap items-center gap-2">
             <ActionButton
               onClick={() => {
-                const added = addTransactions(rows);
-                setStatus(
-                  `Импортировано ${added} операций, повторов пропущено ${rows.length - added}.`,
-                );
+                if (!selected.length) {
+                  setStatus({ tone: "error", text: "Отметьте хотя бы одну операцию для сохранения." });
+                  return;
+                }
+                const known = new Set(state.transactions.map((t) => t.hash));
+                const fresh = selected.filter((r) => !known.has(r.hash));
+                addTransactions(selected);
+                // Запоминаем выбранные категории как правила для будущих выписок.
+                selected.forEach((r, i) => {
+                  if (r.categoryId && !state.rules.some((x) => r.description.toLowerCase().includes(x.match))) {
+                    addRule({
+                      id: `r-${Date.now()}-${i}`,
+                      match: r.description.toLowerCase().slice(0, 18),
+                      categoryId: r.categoryId,
+                      kind: r.kind,
+                    });
+                  }
+                });
+                setStatus({
+                  tone: "ok",
+                  text: `Сохранено операций: ${fresh.length}${
+                    selected.length - fresh.length ? `, повторов пропущено: ${selected.length - fresh.length}` : ""
+                  }.`,
+                });
                 setRows([]);
               }}
             >
-              Импортировать
+              Сохранить ({selected.length})
             </ActionButton>
             <ActionButton variant="ghost" onClick={() => setRows([])}>
               Отменить
