@@ -17,6 +17,7 @@ import { monthLabel } from "@/lib/budget/seed";
 import { categoryFact, dailyFlow, monthSummary } from "@/lib/budget/calc";
 import { percent, shortTenge, tenge } from "@/lib/budget/format";
 import { Badge, Bar, Panel, SourceTag } from "@/components/budget/ui";
+import { TransactionsPanel } from "@/components/budget/TransactionsPanel";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -306,6 +307,8 @@ function Dashboard() {
           </span>
         </Link>
       </Panel>
+
+      <TransactionsPanel />
     </div>
   );
 }
