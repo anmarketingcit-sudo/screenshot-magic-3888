@@ -1,6 +1,6 @@
 // Загружается только в браузере (динамический import из parse.ts).
 // Legacy-сборка pdf.js работает и в старых мобильных браузерах.
-import * as pdfjs from "pdfjs-dist/legacy/build/pdf.min.mjs";
+import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import workerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url";
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
