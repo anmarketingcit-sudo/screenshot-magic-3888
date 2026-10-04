@@ -168,12 +168,12 @@ function Dashboard() {
                 }}
               />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <RBar dataKey="План" fill="var(--line)" radius={[0, 4, 4, 0]} />
-              <RBar dataKey="Факт" radius={[0, 4, 4, 0]}>
+              <RBar dataKey="План" fill="var(--muted-foreground)" fillOpacity={0.2} radius={[0, 4, 4, 0]} />
+              <RBar dataKey="Факт" fill="var(--primary)" radius={[0, 4, 4, 0]}>
                 {planFact.slice(0, 8).map((row) => (
                   <Cell
                     key={row.id}
-                    fill={row.Факт > row.План ? "var(--amber)" : "var(--rose)"}
+                    fill={row.Факт > row.План ? "var(--rose)" : "var(--primary)"}
                   />
                 ))}
               </RBar>
@@ -270,7 +270,7 @@ function Dashboard() {
         </Link>
       </Panel>
 
-      <TransactionsPanel />
+      <div className="lg:col-span-3"><TransactionsPanel /></div>
     </div>
   );
 }
