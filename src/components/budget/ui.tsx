@@ -195,7 +195,7 @@ export function ActionButton({
       className={cn(
         "rounded-xl px-4 py-2 text-sm font-semibold transition-colors",
         variant === "solid"
-          ? "bg-ink text-background hover:bg-ink/90"
+          ? "bg-primary text-primary-foreground hover:bg-ink/90"
           : "border border-line bg-surface hover:bg-muted",
         className,
       )}

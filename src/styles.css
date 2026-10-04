@@ -31,8 +31,8 @@
   --color-card-foreground: var(--ink);
   --color-popover: var(--surface);
   --color-popover-foreground: var(--ink);
-  --color-primary: var(--ink);
-  --color-primary-foreground: var(--background);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--ink);
   --color-accent: var(--secondary);
@@ -41,32 +41,36 @@
   --color-destructive-foreground: var(--background);
   --color-border: var(--line);
   --color-input: var(--line);
-  --color-ring: var(--muted-foreground);
+  --color-ring: var(--primary);
   --color-chart-1: var(--teal);
   --color-chart-2: var(--rose);
   --color-chart-3: var(--amber);
   --color-chart-4: var(--violet);
   --color-chart-5: var(--ink);
-  --font-display: "Manrope", ui-sans-serif, system-ui, sans-serif;
-  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  --font-mono: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --ease-soft: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 :root {
+  /* Палитра в духе приложений Apple */
   --radius: 0.75rem;
-  --background: oklch(0.978 0.012 88);
-  --surface: oklch(1 0 0);
-  --ink: oklch(0.262 0.014 60);
-  --foreground: oklch(0.262 0.014 60);
-  --muted: oklch(0.955 0.01 88);
-  --muted-foreground: oklch(0.53 0.014 60);
-  --secondary: oklch(0.955 0.01 88);
-  --line: oklch(0.262 0.014 60 / 0.1);
-  --teal: oklch(0.575 0.093 178);
-  --rose: oklch(0.602 0.176 13);
-  --amber: oklch(0.762 0.166 63);
-  --violet: oklch(0.612 0.161 291);
+  --background: #f5f5f7;
+  --surface: #ffffff;
+  --ink: #1d1d1f;
+  --foreground: #1d1d1f;
+  --muted: #f0f0f2;
+  --muted-foreground: #6e6e73;
+  --secondary: #f0f0f2;
+  --line: rgb(0 0 0 / 0.08);
+  --primary: #007aff;
+  --primary-foreground: #ffffff;
+  --teal: #248a3d;   /* поступления */
+  --rose: #d70015;   /* превышение */
+  --amber: #c25e00;  /* предупреждение */
+  --violet: #5856d6; /* накопления */
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 4px 16px rgb(0 0 0 / 0.04);
 }
 
 @layer base {
@@ -85,14 +89,38 @@
   h2,
   h3 {
     font-family: var(--font-display);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.015em;
+  }
+
+  a,
+  button,
+  select,
+  input {
+    transition-property: color, background-color, border-color, box-shadow, opacity;
+    transition-duration: 180ms;
+    transition-timing-function: var(--ease-soft);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 1ms !important;
+    }
   }
 }
 
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
@@ -110,14 +138,18 @@
 }
 
 @utility card-panel {
-  border-radius: calc(var(--radius) + 12px);
+  border-radius: 22px;
   background-color: var(--surface);
   border: 1px solid var(--line);
+  box-shadow: var(--shadow-card);
   padding: 1.25rem;
-  animation: rise 500ms var(--ease-soft) both;
+  min-width: 0;
+  animation: rise 200ms var(--ease-soft) both;
+  @media (min-width: 640px) {
+    padding: 1.5rem;
+  }
 }
 
 @utility num {
-  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }

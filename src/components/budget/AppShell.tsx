@@ -71,7 +71,7 @@ export function AppShell({ children, email }: { children: ReactNode; email: stri
                 to={item.to}
                 activeOptions={{ exact: item.to === "/" }}
                 className="shrink-0 rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted"
-                activeProps={{ className: "bg-ink text-background hover:bg-ink" }}
+                activeProps={{ className: "bg-primary text-primary-foreground hover:bg-ink" }}
               >
                 {item.label}
               </Link>
