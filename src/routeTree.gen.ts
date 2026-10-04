@@ -9,148 +9,148 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as CreditsRouteImport } from './routes/credits'
-import { Route as ExpensesRouteImport } from './routes/expenses'
-import { Route as ForecastRouteImport } from './routes/forecast'
-import { Route as GoalsRouteImport } from './routes/goals'
-import { Route as StatementsRouteImport } from './routes/statements'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedCreditsRouteImport } from './routes/_authenticated/credits'
+import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
+import { Route as AuthenticatedForecastRouteImport } from './routes/_authenticated/forecast'
+import { Route as AuthenticatedGoalsRouteImport } from './routes/_authenticated/goals'
+import { Route as AuthenticatedStatementsRouteImport } from './routes/_authenticated/statements'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/_authenticated/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CreditsRoute = CreditsRouteImport.update({
-  id: '/credits',
+const AuthenticatedCreditsRoute = AuthenticatedCreditsRouteImport.update({
+  id: '/_authenticated/credits',
   path: '/credits',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ExpensesRoute = ExpensesRouteImport.update({
-  id: '/expenses',
+const AuthenticatedExpensesRoute = AuthenticatedExpensesRouteImport.update({
+  id: '/_authenticated/expenses',
   path: '/expenses',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ForecastRoute = ForecastRouteImport.update({
-  id: '/forecast',
+const AuthenticatedForecastRoute = AuthenticatedForecastRouteImport.update({
+  id: '/_authenticated/forecast',
   path: '/forecast',
   getParentRoute: () => rootRouteImport,
 } as any)
-const GoalsRoute = GoalsRouteImport.update({
-  id: '/goals',
+const AuthenticatedGoalsRoute = AuthenticatedGoalsRouteImport.update({
+  id: '/_authenticated/goals',
   path: '/goals',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StatementsRoute = StatementsRouteImport.update({
-  id: '/statements',
+const AuthenticatedStatementsRoute = AuthenticatedStatementsRouteImport.update({
+  id: '/_authenticated/statements',
   path: '/statements',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/credits': typeof CreditsRoute
-  '/expenses': typeof ExpensesRoute
-  '/forecast': typeof ForecastRoute
-  '/goals': typeof GoalsRoute
-  '/statements': typeof StatementsRoute
+  '/credits': typeof AuthenticatedCreditsRoute
+  '/expenses': typeof AuthenticatedExpensesRoute
+  '/forecast': typeof AuthenticatedForecastRoute
+  '/goals': typeof AuthenticatedGoalsRoute
+  '/statements': typeof AuthenticatedStatementsRoute
+  '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/credits': typeof CreditsRoute
-  '/expenses': typeof ExpensesRoute
-  '/forecast': typeof ForecastRoute
-  '/goals': typeof GoalsRoute
-  '/statements': typeof StatementsRoute
+  '/credits': typeof AuthenticatedCreditsRoute
+  '/expenses': typeof AuthenticatedExpensesRoute
+  '/forecast': typeof AuthenticatedForecastRoute
+  '/goals': typeof AuthenticatedGoalsRoute
+  '/statements': typeof AuthenticatedStatementsRoute
+  '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/credits': typeof CreditsRoute
-  '/expenses': typeof ExpensesRoute
-  '/forecast': typeof ForecastRoute
-  '/goals': typeof GoalsRoute
-  '/statements': typeof StatementsRoute
+  '/_authenticated/credits': typeof AuthenticatedCreditsRoute
+  '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
+  '/_authenticated/forecast': typeof AuthenticatedForecastRoute
+  '/_authenticated/goals': typeof AuthenticatedGoalsRoute
+  '/_authenticated/statements': typeof AuthenticatedStatementsRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/credits' | '/expenses' | '/forecast' | '/goals' | '/statements'
+    '/credits' | '/expenses' | '/forecast' | '/goals' | '/statements' | '/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/credits' | '/expenses' | '/forecast' | '/goals' | '/statements'
+  to: '/credits' | '/expenses' | '/forecast' | '/goals' | '/statements' | '/'
   id:
     | '__root__'
-    | '/'
-    | '/credits'
-    | '/expenses'
-    | '/forecast'
-    | '/goals'
-    | '/statements'
+    | '/_authenticated/credits'
+    | '/_authenticated/expenses'
+    | '/_authenticated/forecast'
+    | '/_authenticated/goals'
+    | '/_authenticated/statements'
+    | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  CreditsRoute: typeof CreditsRoute
-  ExpensesRoute: typeof ExpensesRoute
-  ForecastRoute: typeof ForecastRoute
-  GoalsRoute: typeof GoalsRoute
-  StatementsRoute: typeof StatementsRoute
+  AuthenticatedCreditsRoute: typeof AuthenticatedCreditsRoute
+  AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
+  AuthenticatedForecastRoute: typeof AuthenticatedForecastRoute
+  AuthenticatedGoalsRoute: typeof AuthenticatedGoalsRoute
+  AuthenticatedStatementsRoute: typeof AuthenticatedStatementsRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/credits': {
-      id: '/credits'
+    '/_authenticated/credits': {
+      id: '/_authenticated/credits'
       path: '/credits'
       fullPath: '/credits'
-      preLoaderRoute: typeof CreditsRouteImport
+      preLoaderRoute: typeof AuthenticatedCreditsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/expenses': {
-      id: '/expenses'
+    '/_authenticated/expenses': {
+      id: '/_authenticated/expenses'
       path: '/expenses'
       fullPath: '/expenses'
-      preLoaderRoute: typeof ExpensesRouteImport
+      preLoaderRoute: typeof AuthenticatedExpensesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/forecast': {
-      id: '/forecast'
+    '/_authenticated/forecast': {
+      id: '/_authenticated/forecast'
       path: '/forecast'
       fullPath: '/forecast'
-      preLoaderRoute: typeof ForecastRouteImport
+      preLoaderRoute: typeof AuthenticatedForecastRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/goals': {
-      id: '/goals'
+    '/_authenticated/goals': {
+      id: '/_authenticated/goals'
       path: '/goals'
       fullPath: '/goals'
-      preLoaderRoute: typeof GoalsRouteImport
+      preLoaderRoute: typeof AuthenticatedGoalsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/statements': {
-      id: '/statements'
+    '/_authenticated/statements': {
+      id: '/_authenticated/statements'
       path: '/statements'
       fullPath: '/statements'
-      preLoaderRoute: typeof StatementsRouteImport
+      preLoaderRoute: typeof AuthenticatedStatementsRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  CreditsRoute: CreditsRoute,
-  ExpensesRoute: ExpensesRoute,
-  ForecastRoute: ForecastRoute,
-  GoalsRoute: GoalsRoute,
-  StatementsRoute: StatementsRoute,
+  AuthenticatedCreditsRoute: AuthenticatedCreditsRoute,
+  AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
+  AuthenticatedForecastRoute: AuthenticatedForecastRoute,
+  AuthenticatedGoalsRoute: AuthenticatedGoalsRoute,
+  AuthenticatedStatementsRoute: AuthenticatedStatementsRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
