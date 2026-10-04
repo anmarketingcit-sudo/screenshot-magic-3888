@@ -90,6 +90,33 @@ export function BudgetProvider({ children, userId }: { children: ReactNode; user
     return () => clearTimeout(t);
   }, [state, ready, userId]);
 
+  // Немедленное сохранение при сворачивании вкладки или закрытии страницы.
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  useEffect(() => {
+    if (!ready) return;
+    const flush = () => {
+      if (!synced.current) return;
+      const next = toRows(stateRef.current);
+      if (JSON.stringify(next) === JSON.stringify(synced.current)) return;
+      const prev = synced.current;
+      synced.current = next;
+      pushDiff(prev, next, userId).catch((e) => {
+        synced.current = prev;
+        setSyncError(e instanceof Error ? e.message : "Не удалось сохранить");
+      });
+    };
+    const onVis = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("beforeunload", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("beforeunload", flush);
+    };
+  }, [ready, userId]);
+
   const update = useCallback((fn: (s: BudgetState) => BudgetState) => setState((s) => fn(s)), []);
 
   const value = useMemo<Ctx>(
