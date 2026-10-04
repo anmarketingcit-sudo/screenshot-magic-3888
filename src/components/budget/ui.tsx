@@ -193,7 +193,7 @@ export function ActionButton({
       type={type}
       onClick={onClick}
       className={cn(
-        "rounded-xl px-4 py-2 text-sm font-semibold transition-colors",
+        "min-h-11 rounded-full px-5 py-2 text-sm font-semibold transition-colors",
         variant === "solid"
           ? "bg-primary text-primary-foreground hover:bg-primary/90"
           : "border border-line bg-surface hover:bg-muted",

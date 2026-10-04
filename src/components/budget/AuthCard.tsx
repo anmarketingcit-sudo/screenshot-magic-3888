@@ -5,7 +5,7 @@ export function AuthCard({ title, subtitle, children }: { title: string; subtitl
     <div className="grid min-h-screen place-items-center bg-background px-5 font-body text-ink">
       <div className="card-panel w-full max-w-sm p-6">
         <div className="mb-5 flex items-center gap-3">
-          <div className="grid size-9 place-items-center rounded-xl bg-ink font-display text-sm font-semibold text-background">
+          <div className="grid size-9 place-items-center rounded-xl bg-primary font-display text-sm font-semibold text-primary-foreground">
             Б
           </div>
           <div>
