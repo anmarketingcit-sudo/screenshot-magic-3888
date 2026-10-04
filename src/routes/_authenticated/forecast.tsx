@@ -18,7 +18,7 @@ import { plannedIncome } from "@/lib/budget/calc";
 import { shortTenge, tenge } from "@/lib/budget/format";
 import { ActionButton, Panel } from "@/components/budget/ui";
 
-export const Route = createFileRoute("/forecast")({
+export const Route = createFileRoute("/_authenticated/forecast")({
   head: () => ({
     meta: [
       { title: "Прогноз и сценарии — Баланс" },

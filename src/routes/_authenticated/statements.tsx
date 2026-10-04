@@ -7,7 +7,7 @@ import { dayLabel, maskCard, tenge } from "@/lib/budget/format";
 import { monthTransactions } from "@/lib/budget/calc";
 import { ActionButton, Badge, Panel, TextField } from "@/components/budget/ui";
 
-export const Route = createFileRoute("/statements")({
+export const Route = createFileRoute("/_authenticated/statements")({
   head: () => ({
     meta: [
       { title: "Загрузка выписок — Баланс" },
