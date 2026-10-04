@@ -86,7 +86,7 @@ export function BudgetProvider({ children, userId }: { children: ReactNode; user
         setSyncError(e instanceof Error ? e.message : "Не удалось сохранить");
       }
       setSaving(false);
-    }, 600);
+    }, 250);
     return () => clearTimeout(t);
   }, [state, ready, userId]);
 
